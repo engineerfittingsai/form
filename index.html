@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Collection Form</title>
+    <!-- Tailwind CSS CDN for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles for the Inter font and basic body styling */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6; /* Light gray background */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 1rem;
+            box-sizing: border-box;
+        }
+        .form-container {
+            background-color: #ffffff;
+            padding: 2.5rem;
+            border-radius: 1rem; /* More rounded corners */
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1); /* Softer shadow */
+            width: 100%;
+            max-width: 500px;
+        }
+        .form-input, .form-textarea {
+            width: 100%;
+            padding: 0.75rem;
+            margin-top: 0.5rem;
+            margin-bottom: 1.25rem;
+            border: 1px solid #d1d5db; /* Light gray border */
+            border-radius: 0.5rem; /* Rounded input fields */
+            font-size: 1rem;
+            transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        }
+        .form-input:focus, .form-textarea:focus {
+            outline: none;
+            border-color: #3b82f6; /* Blue border on focus */
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25); /* Light blue shadow on focus */
+        }
+        .form-button {
+            width: 100%;
+            padding: 0.75rem;
+            background-color: #2563eb; /* Darker blue button */
+            color: white;
+            border: none;
+            border-radius: 0.5rem;
+            font-size: 1.125rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s ease-in-out, transform 0.1s ease-in-out;
+        }
+        .form-button:hover {
+            background-color: #1d4ed8; /* Even darker blue on hover */
+            transform: translateY(-1px); /* Slight lift effect */
+        }
+        .form-button:active {
+            transform: translateY(0); /* Press effect */
+        }
+        .message-box {
+            margin-top: 1.5rem;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            font-weight: 500;
+            text-align: center;
+            display: none; /* Hidden by default */
+        }
+        .message-box.success {
+            background-color: #d1fae5; /* Light green */
+            color: #065f46; /* Dark green text */
+        }
+        .message-box.error {
+            background-color: #fee2e2; /* Light red */
+            color: #991b1b; /* Dark red text */
+        }
+        .label {
+            display: block;
+            margin-bottom: 0.25rem;
+            font-weight: 500;
+            color: #374151; /* Dark gray text */
+        }
+    </style>
+</head>
+<body>
+    <div class="form-container">
+        <h2 class="text-3xl font-bold text-center text-gray-800 mb-8">Submit Your Information</h2>
+        <!--
+            IMPORTANT: The 'action' URL has been updated with the URL you provided.
+            Ensure your Google Apps Script is deployed with "Anyone" access.
+        -->
+        <form id="dataForm" action="https://script.google.com/macros/s/AKfycbz1dz6Cam4jJsTZSXQmqvxnOvnhhOuuTeIj751WwfWnrgKPdv588ryR06BLrzs3nIwv_A/exec" method="POST" enctype="multipart/form-data">
+            <div class="mb-4">
+                <label for="name" class="label">Name:</label>
+                <input type="text" id="name" name="name" class="form-input" required>
+            </div>
+
+            <div class="mb-4">
+                <label for="email" class="label">Email:</label>
+                <input type="email" id="email" name="email" class="form-input" required>
+            </div>
+
+            <div class="mb-4">
+                <label for="message" class="label">Message:</label>
+                <textarea id="message" name="message" rows="4" class="form-textarea" required></textarea>
+            </div>
+
+            <div class="mb-6">
+                <label for="photo" class="label">Upload Photo (Optional):</label>
+                <input type="file" id="photo" name="photo" accept="image/*" class="form-input border-none p-0 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+            </div>
+
+            <button type="submit" class="form-button">Submit Data</button>
+        </form>
+
+        <!-- Message box for displaying success or error -->
+        <div id="messageBox" class="message-box"></div>
+    </div>
+
+    <script>
+        document.getElementById('dataForm').addEventListener('submit', async function(event) {
+            event.preventDefault(); // Prevent default form submission
+
+            const form = event.target;
+            const formData = new FormData(form); // Get form data, including file
+            const submitButton = form.querySelector('button[type="submit"]');
+            const messageBox = document.getElementById('messageBox');
+
+            // Show loading state
+            submitButton.textContent = 'Submitting...';
+            submitButton.disabled = true;
+            messageBox.style.display = 'none'; // Hide previous messages
+
+            try {
+                // Fetch API to send data to Google Apps Script Web App
+                const response = await fetch(form.action, {
+                    method: 'POST',
+                    body: formData // FormData handles multipart/form-data automatically
+                });
+
+                const result = await response.json(); // Parse JSON response from Apps Script
+
+                if (result.status === 'success') {
+                    messageBox.className = 'message-box success';
+                    messageBox.textContent = result.message;
+                    form.reset(); // Clear the form on success
+                } else {
+                    messageBox.className = 'message-box error';
+                    messageBox.textContent = result.message || 'An unknown error occurred.';
+                }
+            } catch (error) {
+                console.error('Form submission error:', error);
+                messageBox.className = 'message-box error';
+                messageBox.textContent = 'Failed to connect to the server. Please try again.';
+            } finally {
+                // Reset button and show message
+                submitButton.textContent = 'Submit Data';
+                submitButton.disabled = false;
+                messageBox.style.display = 'block';
+            }
+        });
+    </script>
+</body>
+</html>
